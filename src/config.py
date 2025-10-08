@@ -10,11 +10,10 @@ load_dotenv()
 
 # API Configuration
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
 
 # Model Configuration
-GPT_MODEL = "gpt-4-turbo-preview"
-CLAUDE_MODEL = "claude-3-5-sonnet-20241022"
+# Note: Using GPT-4o-mini as per challenge constraints (no strong reasoning models allowed)
+GPT_MODEL = "gpt-4o-mini"
 TEMPERATURE = 0.1  # Low temperature for consistent reasoning
 
 # Paths

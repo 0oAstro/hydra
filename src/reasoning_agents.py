@@ -7,11 +7,10 @@ import re
 import json
 from typing import Dict, Optional
 from langchain_openai import ChatOpenAI
-from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from config import (
-    OPENAI_API_KEY, ANTHROPIC_API_KEY, GPT_MODEL, CLAUDE_MODEL,
+    OPENAI_API_KEY, GPT_MODEL,
     TEMPERATURE, CATEGORY_PROMPTS
 )
 
@@ -131,14 +130,8 @@ class MultiAgentReasoningSystem:
                 temperature=TEMPERATURE,
                 api_key=OPENAI_API_KEY
             )
-        elif ANTHROPIC_API_KEY:
-            return ChatAnthropic(
-                model=CLAUDE_MODEL,
-                temperature=TEMPERATURE,
-                api_key=ANTHROPIC_API_KEY
-            )
         else:
-            raise ValueError("No API key found. Set OPENAI_API_KEY or ANTHROPIC_API_KEY")
+            raise ValueError("No API key found. Set OPENAI_API_KEY in your .env file")
     
     def _create_agents(self) -> Dict:
         """Create specialized agents for each category"""

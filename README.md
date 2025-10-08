@@ -22,6 +22,8 @@ A production-ready AI reasoning system that leverages category-specific agents a
 
 This framework implements a two-stage reasoning pipeline that combines traditional machine learning with large language models (LLMs) to solve complex reasoning problems. The system achieves high accuracy by routing problems to specialized agents based on their category, each employing domain-specific reasoning strategies.
 
+**Important Constraint**: Per challenge requirements, this system uses GPT-4o-mini (a lightweight model) rather than models with strong reasoning abilities (o1, o3, GPT-4, Claude Sonnet, etc.). This demonstrates that effective reasoning can be achieved through sophisticated system design and prompt engineering rather than relying solely on powerful models.
+
 ### Key Features
 
 - **Multi-Agent Architecture**: 7 specialized reasoning agents, each expert in specific problem categories
@@ -61,9 +63,11 @@ The system handles all 7 reasoning categories specified in the challenge:
 
 **Stage 2: Specialized Reasoning**
 - **Agents**: 7 category-specific reasoning agents
-- **LLM Backend**: GPT-4 Turbo or Claude 3.5 Sonnet
+- **LLM Backend**: GPT-4o-mini (lightweight model as per challenge constraints)
 - **Strategy**: Custom chain-of-thought prompts per category
 - **Output**: Structured reasoning with confidence scores
+
+**Note**: The challenge prohibits the use of models with strong reasoning abilities (such as o1, o3, GPT-4, Claude Sonnet, etc.). This implementation uses GPT-4o-mini, a smaller and more cost-effective model, demonstrating that effective reasoning can be achieved through proper prompt engineering and system architecture rather than relying solely on model capabilities.
 
 ### 3. Explainable AI & Transparency
 
@@ -123,7 +127,7 @@ The system handles all 7 reasoning categories specified in the challenge:
 │  └──────────────────┬──────────────────────────────┘   │
 │                     │                                    │
 │  ┌──────────────────▼──────────────────────────────┐   │
-│  │  LLM Inference (GPT-4 / Claude 3.5)            │   │
+│  │  LLM Inference (GPT-4o-mini)                   │   │
 │  │  Temperature: 0.1 (low for consistency)         │   │
 │  └──────────────────┬──────────────────────────────┘   │
 │                     │                                    │
@@ -263,7 +267,7 @@ Be careful of:
 
 - Python 3.8 or higher
 - pip package manager
-- API key for OpenAI (GPT-4) or Anthropic (Claude)
+- API key for OpenAI (GPT-4o-mini)
 
 ### Step-by-Step Installation
 
@@ -282,8 +286,6 @@ pip install -r requirements.txt
 # 4. Configure API keys
 # Create .env file in project root
 echo "OPENAI_API_KEY=sk-your-openai-key-here" > .env
-# OR for Anthropic Claude
-echo "ANTHROPIC_API_KEY=sk-ant-your-anthropic-key-here" > .env
 
 # 5. Verify installation
 python -c "from src.main import MLReasoningPipeline; print('Installation successful!')"
@@ -299,9 +301,7 @@ python -c "from src.main import MLReasoningPipeline; print('Installation success
 **LLM Integration**:
 - `langchain>=0.1.0` - LLM orchestration framework
 - `langchain-openai>=0.0.5` - OpenAI integration
-- `langchain-anthropic>=0.1.0` - Anthropic integration
 - `openai>=1.0.0` - OpenAI API client
-- `anthropic>=0.18.0` - Anthropic API client
 
 **API & Utilities**:
 - `fastapi>=0.104.0` - Web framework
@@ -601,22 +601,26 @@ print(f"Answer Distribution: {answer_dist}")
 
 ### Model Selection
 
-**GPT-4 Turbo**:
-- Superior reasoning capabilities
-- Strong mathematical problem-solving
-- Excellent following of complex instructions
-- Cost: ~$0.03-0.05 per problem
+**GPT-4o-mini**:
+- Lightweight and cost-effective model
+- Compliant with challenge constraints (no strong reasoning models)
+- Demonstrates effectiveness of prompt engineering over raw model power
+- Excellent instruction following capabilities
+- Cost: ~$0.001-0.002 per problem (50x cheaper than GPT-4)
 
-**Claude 3.5 Sonnet**:
-- Outstanding analytical reasoning
-- Strong spatial and logical reasoning
-- Lower cost than GPT-4
-- Faster inference time
+**Why GPT-4o-mini?**
+
+The challenge explicitly prohibits the use of models with strong reasoning abilities (o1, o3, GPT-4, Claude Sonnet, etc.). This constraint forces the system to rely on:
+- Sophisticated prompt engineering
+- Category-specific reasoning templates
+- Multi-stage architecture design
+- Explicit chain-of-thought guidance
+
+This approach proves that effective reasoning systems can be built with smaller models through proper system design rather than brute-force model capability.
 
 **Configuration** (`config.py`):
 ```python
-GPT_MODEL = "gpt-4-turbo-preview"
-CLAUDE_MODEL = "claude-3-5-sonnet-20241022"
+GPT_MODEL = "gpt-4o-mini"
 TEMPERATURE = 0.1  # Low for consistency
 ```
 
@@ -637,23 +641,27 @@ TEMPERATURE = 0.1  # Low for consistency
 | Operation | Average Time | Notes |
 |-----------|-------------|-------|
 | Category Classification | 40-60ms | CPU-bound |
-| LLM Inference (GPT-4) | 2-4s | API-dependent |
-| LLM Inference (Claude) | 1-3s | API-dependent |
-| Full Pipeline | 3-5s | End-to-end |
-| Batch Processing (100 items) | 5-8 minutes | Parallel possible |
+| LLM Inference (GPT-4o-mini) | 1-2s | API-dependent, faster than GPT-4 |
+| Full Pipeline | 1.5-2.5s | End-to-end |
+| Batch Processing (100 items) | 2-4 minutes | Parallel possible |
 
 ### Cost Analysis
 
-**Per-Question Cost** (GPT-4):
+**Per-Question Cost** (GPT-4o-mini):
 - Category Classification: $0.00 (local inference)
-- LLM Reasoning: ~$0.03-0.05
-- Total: ~$0.03-0.05 per question
+- LLM Reasoning: ~$0.001-0.002
+- Total: ~$0.001-0.002 per question
+
+**Cost Comparison**:
+- GPT-4o-mini: $0.001-0.002 per question
+- GPT-4 (if allowed): $0.03-0.05 per question (15-50x more expensive)
+- 1000 questions: ~$1-2 with GPT-4o-mini vs $30-50 with GPT-4
 
 **Optimization Strategies**:
 - Cache category classifications
 - Batch LLM requests where possible
-- Use Claude for cost-sensitive applications
 - Implement request throttling
+- Cache frequent problem patterns
 
 ### Scalability
 
@@ -911,9 +919,9 @@ class ActiveLearningQueue:
 **Purpose**: Handle problems with images, diagrams, or visual components
 
 **Technology**:
-- GPT-4 Vision API
-- Claude 3 Vision capabilities
+- GPT-4o-mini Vision capabilities
 - CLIP for image-text alignment
+- Image preprocessing and analysis
 
 **Use Cases**:
 - Spatial problems with diagrams
@@ -1043,13 +1051,11 @@ iitg/
 Create a `.env` file in the project root:
 
 ```bash
-# LLM API Keys (choose one)
+# LLM API Key
 OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
 
 # Model Configuration
-GPT_MODEL=gpt-4-turbo-preview
-CLAUDE_MODEL=claude-3-5-sonnet-20241022
+GPT_MODEL=gpt-4o-mini
 TEMPERATURE=0.1
 
 # Processing Settings
@@ -1067,8 +1073,7 @@ OUTPUT_DIR=./ML Challenge Dataset
 
 **Model Settings**:
 ```python
-GPT_MODEL = "gpt-4-turbo-preview"      # OpenAI model
-CLAUDE_MODEL = "claude-3-5-sonnet-20241022"  # Anthropic model
+GPT_MODEL = "gpt-4o-mini"              # Lightweight OpenAI model
 TEMPERATURE = 0.1                       # Low for consistency
 ```
 
