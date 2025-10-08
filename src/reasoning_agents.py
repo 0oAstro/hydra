@@ -111,7 +111,7 @@ CONFIDENCE: [0.0-1.0]
             'problem_category': self.category,
             'final_answer': answer,
             'confidence': confidence,
-            'explanation': reasoning[:500],  # Limit length
+            'explanation': reasoning,  # Full reasoning without truncation
             'raw_response': response_text
         }
 

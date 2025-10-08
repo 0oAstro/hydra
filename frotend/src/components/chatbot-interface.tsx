@@ -2,178 +2,300 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, RefreshCw } from "lucide-react";
+import {
+  Sparkles,
+  Send,
+  Loader2,
+  CheckCircle2,
+  Brain,
+  Target,
+  TrendingUp,
+  X
+} from "lucide-react";
+import { reasoningApi, type ReasoningResponse } from "@/lib/api";
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
   id: string;
-  type: "user" | "bot";
-  content: string;
+  type: "question" | "answer";
+  question?: string;
+  options?: string[];
+  result?: ReasoningResponse;
 }
-
-interface BotResponse {
-  id: string;
-  content: string;
-}
-
-const generateMockResponses = (): BotResponse[] => {
-  const responses = [
-    "Based on the data analysis, the optimal approach would be to implement a multi-tiered strategy.",
-    "From a technical perspective, this requires careful consideration of scalability and performance.",
-    "The research indicates that user engagement increases by 35% with this method.",
-    "Industry best practices suggest integrating these components for maximum efficiency.",
-    "Alternative solutions include leveraging cloud infrastructure for better resource management.",
-    "Statistical models show a high correlation between these variables.",
-    "The framework provides robust support for this use case.",
-    "Recent studies demonstrate significant improvements in processing time.",
-  ];
-  
-  return Array.from({ length: 4 }, (_, i) => ({
-    id: `response-${Date.now()}-${i}`,
-    content: responses[Math.floor(Math.random() * responses.length)],
-  }));
-};
 
 export const ChatbotInterface = () => {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [currentResponses, setCurrentResponses] = useState<BotResponse[]>([]);
-  const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
+  const [question, setQuestion] = useState("");
+  const [options, setOptions] = useState<string[]>(["", "", "", "", ""]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string>("");
 
-  const handleSendMessage = () => {
-    if (!input.trim()) return;
+  const handleOptionChange = (index: number, value: string) => {
+    const newOptions = [...options];
+    newOptions[index] = value;
+    setOptions(newOptions);
+  };
+
+  const handleSubmit = async () => {
+    if (!question.trim()) {
+      setError("Question is required");
+      return;
+    }
+    
+    if (question.trim().length < 10) {
+      setError("Question must be at least 10 characters");
+      return;
+    }
+    
+    if (options.some(opt => !opt.trim())) {
+      setError("All 5 options are required");
+      return;
+    }
+
+    setError("");
+    setIsProcessing(true);
 
     const userMessage: Message = {
-      id: `user-${Date.now()}`,
-      type: "user",
-      content: input.trim(),
+      id: `q-${Date.now()}`,
+      type: "question",
+      question: question.trim(),
+      options: options.map(opt => opt.trim()),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-    setIsWaitingForResponse(true);
+    setMessages(prev => [...prev, userMessage]);
 
-    setTimeout(() => {
-      const responses = generateMockResponses();
-      setCurrentResponses(responses);
-      setIsWaitingForResponse(false);
-    }, 500);
-  };
+    try {
+      const result = await reasoningApi.solve({
+        question: question.trim(),
+        options: options.map(opt => opt.trim()),
+      });
 
-  const handleGenerateNewResponses = () => {
-    setIsWaitingForResponse(true);
-    setTimeout(() => {
-      const responses = generateMockResponses();
-      setCurrentResponses(responses);
-      setIsWaitingForResponse(false);
-    }, 500);
-  };
+      const answerMessage: Message = {
+        id: `a-${Date.now()}`,
+        type: "answer",
+        result,
+      };
 
-  const handleSelectResponse = (response: BotResponse) => {
-    const botMessage: Message = {
-      id: response.id,
-      type: "bot",
-      content: response.content,
-    };
-
-    setMessages((prev) => [...prev, botMessage]);
-    setCurrentResponses([]);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      handleSendMessage();
+      setMessages(prev => [...prev, answerMessage]);
+      setQuestion("");
+      setOptions(["", "", "", "", ""]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to process");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  return (
-    <div className="flex flex-col h-screen max-w-4xl mx-auto p-4 gap-4">
-      <Card className="flex-1 flex flex-col">
-        <CardHeader>
-          <CardTitle>AI Chatbot</CardTitle>
-        </CardHeader>
-        <CardContent className="flex-1 flex flex-col gap-4 p-4">
-          <ScrollArea className="flex-1 pr-4">
-            <div className="flex flex-col gap-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${
-                    message.type === "user" ? "justify-end" : "justify-start"
-                  }`}
-                >
-                  <div
-                    className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                      message.type === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
-                    }`}
-                  >
-                    {message.content}
-                  </div>
-                </div>
-              ))}
-              {isWaitingForResponse && (
-                <div className="flex justify-start">
-                  <div className="bg-muted rounded-lg px-4 py-2">
-                    <div className="flex gap-1">
-                      <div className="w-2 h-2 rounded-full bg-foreground/50 animate-pulse" />
-                      <div className="w-2 h-2 rounded-full bg-foreground/50 animate-pulse delay-150" />
-                      <div className="w-2 h-2 rounded-full bg-foreground/50 animate-pulse delay-300" />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </ScrollArea>
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey && !isProcessing) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
 
-          {currentResponses.length > 0 && (
-            <div className="border-t pt-4">
-              <p className="text-sm font-medium mb-3">Select a response:</p>
-              <div className="flex flex-col gap-2">
-                {currentResponses.map((response, index) => (
-                  <Button
-                    key={response.id}
-                    variant="outline"
-                    className="justify-start text-left h-auto py-3 px-4"
-                    onClick={() => handleSelectResponse(response)}
-                  >
-                    <span className="font-medium mr-2">{index + 1}.</span>
-                    <span className="flex-1">{response.content}</span>
-                  </Button>
-                ))}
-                <Button
-                  variant="secondary"
-                  className="mt-2"
-                  onClick={handleGenerateNewResponses}
-                  disabled={isWaitingForResponse}
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Give Another Response
-                </Button>
+  const questionLength = question.length;
+  const isQuestionValid = questionLength >= 10;
+
+  return (
+    <div className="h-screen flex flex-col bg-neutral-950 text-neutral-50">
+      <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full min-h-0">
+        {/* Header - Fixed at top */}
+        <div className="flex-shrink-0 px-4 sm:px-6 pt-6 pb-4 border-b border-neutral-800 bg-neutral-950">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-neutral-100 flex items-center justify-center">
+                <Brain className="w-4 h-4 text-neutral-900" />
+              </div>
+              <div>
+                <h1 className="text-lg font-medium tracking-tight text-neutral-50">
+                  Reasoning Engine
+                </h1>
+                <p className="text-xs text-neutral-400">
+                  Multi-agent AI reasoning
+                </p>
               </div>
             </div>
-          )}
-
-          <div className="flex gap-2">
-            <Input
-              placeholder="Type your message..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              disabled={isWaitingForResponse || currentResponses.length > 0}
-            />
-            <Button
-              onClick={handleSendMessage}
-              disabled={!input.trim() || isWaitingForResponse || currentResponses.length > 0}
-            >
-              <Send className="w-4 h-4" />
-            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Chat Messages - Scrollable Area */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="px-4 sm:px-6 py-6 pb-8 space-y-6 sm:space-y-8">
+            {messages.map((message) => (
+              <div key={message.id} className="space-y-6">
+                {message.type === "question" && (
+                  <div className="space-y-3 sm:space-y-4">
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-neutral-800 flex items-center justify-center flex-shrink-0 mt-0.5 sm:mt-1">
+                        <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-400" />
+                      </div>
+                      <div className="flex-1 space-y-2 sm:space-y-3 min-w-0">
+                        <p className="text-sm font-medium text-neutral-50 break-words">
+                          {message.question}
+                        </p>
+                        <div className="grid grid-cols-1 gap-1.5 sm:gap-2">
+                          {message.options?.map((opt, idx) => {
+                            // Find if this option was selected in any answer message
+                            const isSelected = messages.some(msg => 
+                              msg.type === "answer" && 
+                              msg.result && 
+                              msg.result.predicted_answer === idx + 1 &&
+                              messages.indexOf(msg) > messages.indexOf(message)
+                            );
+                            
+                            return (
+                              <div
+                                key={idx}
+                                className={`text-xs py-2 px-3 rounded-lg border break-words transition-colors ${
+                                  isSelected 
+                                    ? 'bg-green-950/30 border-green-800 text-green-300'
+                                    : 'text-neutral-400 bg-neutral-900 border-neutral-800'
+                                }`}
+                              >
+                                <span className="font-medium mr-2">{idx + 1}.</span>
+                                {opt}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {message.type === "answer" && message.result && (
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-neutral-100 flex items-center justify-center flex-shrink-0 mt-0.5 sm:mt-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-900" />
+                    </div>
+                    <div className="flex-1 space-y-3 sm:space-y-4 min-w-0">
+                      <Card className="p-4 sm:p-6 border-neutral-800 bg-neutral-900">
+                        <div className="space-y-4 sm:space-y-6">
+                          {/* Answer */}
+                          <div>
+                            <div className="text-xs font-medium text-neutral-400 mb-2 uppercase tracking-wide">
+                              Selected Answer
+                            </div>
+                            <div className="text-base sm:text-lg font-medium text-neutral-50 break-words">
+                              {message.result.predicted_answer}. {message.result.answer_text}
+                            </div>
+                          </div>
+
+                          {/* Metrics */}
+                          <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-3 sm:pt-4 border-t border-neutral-800">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5 sm:gap-2 text-xs text-neutral-400">
+                                <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                <span className="uppercase tracking-wide">Confidence</span>
+                              </div>
+                              <div className="text-xl sm:text-2xl font-light text-neutral-50">
+                                {(message.result.confidence * 100).toFixed(0)}%
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5 sm:gap-2 text-xs text-neutral-400">
+                                <Target className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                <span className="uppercase tracking-wide">Category</span>
+                              </div>
+                              <div className="text-sm font-medium text-neutral-50 break-words">
+                                {message.result.category}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Reasoning */}
+                          <div className="pt-3 sm:pt-4 border-t border-neutral-800">
+                            <div className="text-xs font-medium text-neutral-400 mb-2 sm:mb-3 uppercase tracking-wide">
+                              Reasoning
+                            </div>
+                            <div className="text-xs sm:text-sm leading-relaxed text-neutral-300 break-words prose prose-xs sm:prose-sm max-w-none prose-invert">
+                              <ReactMarkdown>
+                                {message.result.reasoning}
+                              </ReactMarkdown>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Input Area - Fixed at bottom */}
+        <div className="flex-shrink-0 border-t border-neutral-800 bg-neutral-900">
+          <div className="px-4 sm:px-6 py-4 space-y-3">
+            {error && (
+              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-red-950/20 border border-red-900/30">
+                <X className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
+                <p className="text-xs text-red-400">{error}</p>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-medium text-neutral-400 uppercase tracking-wide">
+                    Question
+                  </label>
+                  <span className={`text-xs ${questionLength < 10 ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                    {questionLength}/10
+                  </span>
+                </div>
+                <Input
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="What is the next number: 2, 4, 6, 8, ?"
+                  disabled={isProcessing}
+                  className="border-neutral-800 bg-neutral-950 text-neutral-50 placeholder:text-neutral-500 h-9 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-neutral-400 mb-1.5 block uppercase tracking-wide">
+                  Options (exactly 5)
+                </label>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {options.map((option, index) => (
+                    <Input
+                      key={index}
+                      value={option}
+                      onChange={(e) => handleOptionChange(index, e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      placeholder={`${index + 1}`}
+                      disabled={isProcessing}
+                      className="border-neutral-800 bg-neutral-950 text-neutral-50 placeholder:text-neutral-500 h-9 text-sm text-center"
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <Button
+                onClick={handleSubmit}
+                disabled={isProcessing || !isQuestionValid || options.some(opt => !opt.trim())}
+                className="w-full bg-neutral-100 hover:bg-neutral-200 text-neutral-900 h-9 text-sm font-medium disabled:opacity-50"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Processing
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4 mr-2" />
+                    Solve
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
