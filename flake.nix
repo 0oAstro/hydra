@@ -1,5 +1,5 @@
 {
-  description = "A sample flake for Eightfold Finals";
+  description = "Sample flake";
 
   inputs = {
     nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0";
