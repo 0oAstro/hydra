@@ -16,7 +16,6 @@ A production-ready AI reasoning system that leverages category-specific agents a
 - [Future Extensions](#future-extensions)
 - [Project Structure](#project-structure)
 - [Configuration](#configuration)
-- [Contributing](#contributing)
 
 ## Overview
 
@@ -679,7 +678,119 @@ TEMPERATURE = 0.1  # Low for consistency
 
 The current system provides a solid foundation for advanced reasoning capabilities. The following extensions are planned for production deployment:
 
-### 1. Symbolic Solver Integration
+### 1. Advanced Reasoning Frameworks
+
+**Purpose**: Evolve from simple chain-of-thought to sophisticated multi-agent reasoning architectures
+
+**Current Limitation**: The system currently uses single-agent chain-of-thought prompting, which processes problems linearly through one specialized agent per category. While effective, this approach lacks the parallel exploration and consensus-building capabilities of modern reasoning frameworks.
+
+**Next-Generation Frameworks**:
+
+| Framework | Description | Key Advantages | Use Case |
+|-----------|-------------|----------------|----------|
+| **Fleet of Agents** | Multiple specialized agents work in parallel on the same problem, with a coordinator agent synthesizing their insights | Diverse perspectives, error correction through consensus, robust to individual agent failures | Complex multi-domain problems requiring expertise from multiple categories |
+| **Tree of Thoughts (ToT)** | Explores multiple reasoning paths simultaneously in a tree structure, backtracking when needed | Systematic exploration of solution space, identifies dead-ends early, finds optimal solutions | Problems with multiple valid approaches or requiring search |
+| **Graph of Thoughts (GoT)** | Represents reasoning as a graph with interconnected thought nodes, enabling non-linear reasoning | Handles complex dependencies, iterative refinement, combines intermediate results | Problems requiring synthesis of multiple sub-solutions |
+| **ReAct (Reasoning + Acting)** | Interleaves reasoning steps with external actions (tool use, information retrieval) | Grounds reasoning in real data, adaptive strategy, reduces hallucination | Problems requiring external knowledge or computation |
+| **Self-Refine** | Iterative self-critique and refinement of initial solutions | Progressive quality improvement, self-correction, confidence calibration | High-stakes problems requiring verification |
+| **Reflexion** | Learns from past mistakes through episodic memory and self-reflection | Continuous improvement, error pattern recognition, adaptive strategies | Scenarios with repeated similar problems |
+
+**Implementation Roadmap**:
+
+```python
+# Phase 1: Fleet of Agents Architecture
+class FleetCoordinator:
+    def __init__(self):
+        self.specialist_agents = [
+            SpatialAgent(), SequenceAgent(), LogicAgent(), ...
+        ]
+        self.coordinator = CoordinatorAgent()
+    
+    def solve_with_fleet(self, problem: str, options: list) -> dict:
+        # Step 1: Parallel exploration
+        solutions = []
+        for agent in self.specialist_agents:
+            solution = agent.solve(problem, options)
+            solutions.append(solution)
+        
+        # Step 2: Cross-agent deliberation
+        debates = self.facilitate_debate(solutions)
+        
+        # Step 3: Consensus building
+        final_solution = self.coordinator.synthesize(
+            solutions=solutions,
+            debates=debates,
+            confidence_threshold=0.8
+        )
+        
+        return final_solution
+
+# Phase 2: Tree of Thoughts Integration
+class TreeOfThoughtsReasoner:
+    def explore_reasoning_tree(self, problem: str, depth: int = 3):
+        # Generate multiple reasoning branches
+        branches = self.generate_branches(problem, branching_factor=3)
+        
+        # Evaluate each branch
+        for branch in branches:
+            score = self.evaluate_branch(branch)
+            if score < threshold:
+                continue  # Prune poor branches
+            
+            # Recursively explore promising branches
+            if depth > 0:
+                sub_branches = self.explore_reasoning_tree(branch, depth-1)
+                branch.children = sub_branches
+        
+        # Select best path
+        return self.select_optimal_path(branches)
+
+# Phase 3: ReAct Integration with Tool Use
+class ReActAgent:
+    def solve_with_tools(self, problem: str):
+        thought = self.think(problem)
+        
+        while not self.is_complete(thought):
+            # Decide on action
+            action = self.decide_action(thought)
+            
+            # Execute action (call external tool)
+            if action.type == "code_execution":
+                result = self.execute_code(action.code)
+            elif action.type == "symbolic_solver":
+                result = self.solve_symbolically(action.constraints)
+            
+            # Update reasoning with action result
+            thought = self.integrate_result(thought, result)
+        
+        return self.extract_answer(thought)
+```
+
+**Performance Improvements Expected**:
+- **Accuracy**: +5-10% through consensus and error correction
+- **Robustness**: 2-3x reduction in catastrophic failures
+- **Explainability**: Multi-perspective reasoning traces
+- **Confidence Calibration**: Better uncertainty quantification through agent agreement
+
+**Migration Strategy**:
+1. **Hybrid Mode**: Run both chain-of-thought and fleet in parallel, compare results
+2. **Gradual Rollout**: Start with high-confidence CoT predictions, use fleet for uncertain cases
+3. **A/B Testing**: Measure accuracy improvements across categories
+4. **Full Migration**: Replace CoT once fleet consistently outperforms by >5%
+
+**Challenges**:
+- Increased API costs (3-5x more LLM calls)
+- Higher latency (parallel calls + coordination overhead)
+- Complexity in debugging multi-agent interactions
+- Coordination logic development and tuning
+
+**Mitigation**:
+- Smart agent selection (not all agents for every problem)
+- Asynchronous parallel execution
+- Caching of intermediate reasoning steps
+- Hierarchical coordination (only escalate to fleet for complex problems)
+
+### 2. Symbolic Solver Integration
 
 **Purpose**: Handle mathematical and logical problems with symbolic computation
 
