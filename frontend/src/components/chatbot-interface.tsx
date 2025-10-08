@@ -28,7 +28,7 @@ interface Message {
 export const ChatbotInterface = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [question, setQuestion] = useState("");
-  const [options, setOptions] = useState<string[]>(["", "", "", "", ""]);
+  const [options, setOptions] = useState<string[]>(["", "", "", "", "Another Option"]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string>("");
 
@@ -80,7 +80,7 @@ export const ChatbotInterface = () => {
 
       setMessages(prev => [...prev, answerMessage]);
       setQuestion("");
-      setOptions(["", "", "", "", ""]);
+      setOptions(["", "", "", "", "Another Option"]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to process");
     } finally {
